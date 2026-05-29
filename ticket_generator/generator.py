@@ -2,7 +2,7 @@ import itertools
 import math
 import random
 from collections import Counter, defaultdict
-from typing import Dict, Iterable, List, Sequence, Set, Tuple
+from typing import Dict, List, Sequence, Set
 
 from .models import (
     BLOCK_PRACTICE,
@@ -55,6 +55,7 @@ def generate_category(
             co_usage,
             theme_counts_total,
             params.theme_fraction_limit,
+            params.max_questions_per_theme,
             rng,
         )
         _remember_selection(test_questions, usage[BLOCK_TEST], co_usage)
@@ -92,7 +93,12 @@ def generate_category(
         ticket.is_main = True
 
     warnings = _build_warnings(category, pools, params)
-    return CategoryGeneration(category=category, tickets=tickets, warnings=warnings)
+    return CategoryGeneration(
+        category=category,
+        tickets=tickets,
+        warnings=warnings,
+        source_questions=list(questions),
+    )
 
 
 def _ensure_pool(category: int, label: str, pool: Sequence[Question], required: int) -> None:
@@ -110,6 +116,7 @@ def _select_test_questions(
     co_usage: Dict[str, Counter],
     theme_counts_total: Counter,
     fraction_limit: float,
+    max_questions_per_theme: int,
     rng: random.Random,
 ) -> List[Question]:
     selected: List[Question] = []
@@ -129,7 +136,8 @@ def _select_test_questions(
             q
             for q in pool
             if q.question_id not in selected_ids
-            and theme_in_ticket[q.topic] < _theme_limit(q.topic, theme_counts_total, fraction_limit)
+            and theme_in_ticket[q.topic]
+            < _theme_limit(q.topic, theme_counts_total, fraction_limit, max_questions_per_theme)
         ]
         if not candidates:
             candidates = [q for q in pool if q.question_id not in selected_ids]
@@ -155,9 +163,14 @@ def _select_test_questions(
     return selected
 
 
-def _theme_limit(topic: str, theme_counts_total: Counter, fraction_limit: float) -> int:
+def _theme_limit(
+    topic: str, theme_counts_total: Counter, fraction_limit: float, max_questions_per_theme: int
+) -> int:
     total = theme_counts_total[topic]
-    return max(1, int(math.ceil(total * fraction_limit)))
+    proportional_limit = max(1, int(math.ceil(total * fraction_limit)))
+    if max_questions_per_theme <= 0:
+        return proportional_limit
+    return min(proportional_limit, max_questions_per_theme)
 
 
 def _select_balanced_combo(
@@ -210,9 +223,26 @@ def _choose_main_tickets(tickets: Sequence[Ticket], count: int) -> List[Ticket]:
     best_combo = None
     best_score = None
     for combo in itertools.combinations(tickets, count):
-        score = 0
+        pair_scores = []
+        test_overlaps = []
+        unique_test_ids = set()
+        test_slots = 0
+        for ticket in combo:
+            ticket_ids = ticket.ids(BLOCK_TEST)
+            test_slots += len(ticket_ids)
+            unique_test_ids.update(ticket_ids)
         for left, right in itertools.combinations(combo, 2):
-            score += _ticket_similarity(left, right)
+            pair_scores.append(_ticket_similarity(left, right))
+            test_overlaps.append(
+                len(set(left.ids(BLOCK_TEST)) & set(right.ids(BLOCK_TEST)))
+            )
+        score = (
+            test_slots - len(unique_test_ids),
+            max(test_overlaps),
+            sum(test_overlaps),
+            max(pair_scores),
+            sum(pair_scores),
+        )
         if best_score is None or score < best_score:
             best_score = score
             best_combo = combo

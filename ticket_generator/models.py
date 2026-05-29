@@ -36,7 +36,8 @@ class GenerationParams:
     thematic_count: int = 3
     practice_count: int = 2
     theme_fraction_limit: float = 0.5
-    seed: int = 140
+    max_questions_per_theme: int = 4
+    seed: int = 0
 
 
 @dataclass
@@ -61,6 +62,7 @@ class CategoryGeneration:
     category: int
     tickets: List[Ticket]
     warnings: List[str]
+    source_questions: List[Question]
 
 
 @dataclass

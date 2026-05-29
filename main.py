@@ -46,6 +46,7 @@ class TicketGeneratorApp:
         self.test_count = IntVar(value=50)
         self.thematic_count = IntVar(value=3)
         self.practice_count = IntVar(value=2)
+        self.max_questions_per_theme = IntVar(value=4)
         self.category_vars = {category: BooleanVar(value=True) for category in range(1, 9)}
         self.log = None
 
@@ -86,7 +87,10 @@ class TicketGeneratorApp:
         self._add_int_entry(params, 1, "Тестовых вопросов", self.test_count)
         self._add_int_entry(params, 2, "Тематических вопросов", self.thematic_count)
         self._add_int_entry(params, 3, "Практических задач", self.practice_count)
-        Label(params, text="Основных билетов: 4").grid(row=4, column=0, sticky=W, pady=4)
+        self._add_int_entry(
+            params, 4, "Максимум из одной темы", self.max_questions_per_theme
+        )
+        Label(params, text="Основных билетов: 4").grid(row=5, column=0, sticky=W, pady=4)
 
         actions = Frame(self.root)
         actions.pack(fill="x", padx=10, pady=8)
@@ -137,6 +141,7 @@ class TicketGeneratorApp:
             test_count=int(self.test_count.get()),
             thematic_count=int(self.thematic_count.get()),
             practice_count=int(self.practice_count.get()),
+            max_questions_per_theme=int(self.max_questions_per_theme.get()),
         )
         if params.ticket_count < 4:
             raise ValueError("Количество билетов должно быть не меньше 4.")
@@ -144,6 +149,8 @@ class TicketGeneratorApp:
             raise ValueError("Количество тестовых вопросов должно быть больше 0.")
         if params.thematic_count < 0 or params.practice_count < 0:
             raise ValueError("Количество вопросов не может быть отрицательным.")
+        if params.max_questions_per_theme < 1:
+            raise ValueError("Максимум вопросов из одной темы должен быть больше 0.")
         return params
 
     def _validate(self):
@@ -223,6 +230,7 @@ class TicketGeneratorApp:
 
             params = self._params()
             date_value = datetime.now()
+            params.seed = int(date_value.timestamp() * 1000000) % 2147483647
             planned_files = [
                 os.path.join(output_dir, category_filename(category, date_value))
                 for category in categories
