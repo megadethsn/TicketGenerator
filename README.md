@@ -29,6 +29,8 @@ build_exe.bat
 
 Для Windows 7 рекомендуется собирать приложение на машине с Windows и Python 3.8.x.
 Результат будет в папке `dist\TicketGenerator`.
+Внутри сборки служебные библиотеки и DLL находятся в подпапке `_internal`.
+Архив `base_library.zip` является штатной частью PyInstaller-сборки, удалять его нельзя.
 
 ## Сборка через GitHub
 

@@ -40,8 +40,8 @@ class TicketGeneratorApp:
         self.root.title("Генератор экзаменационных билетов")
         self.root.geometry("900x650")
 
-        self.registry_path = Entry(root, width=85)
-        self.output_dir = Entry(root, width=85)
+        self.registry_path = None
+        self.output_dir = None
         self.ticket_count = IntVar(value=10)
         self.test_count = IntVar(value=50)
         self.thematic_count = IntVar(value=3)
@@ -54,6 +54,9 @@ class TicketGeneratorApp:
     def _build_ui(self) -> None:
         files = LabelFrame(self.root, text="Файлы", padx=8, pady=8)
         files.pack(fill="x", padx=10, pady=8)
+
+        self.registry_path = Entry(files, width=85)
+        self.output_dir = Entry(files, width=85)
 
         Label(files, text="Реестр Excel").grid(row=0, column=0, sticky=W, pady=3)
         self.registry_path.grid(row=0, column=1, sticky=W, pady=3)
